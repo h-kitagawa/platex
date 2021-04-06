@@ -952,10 +952,11 @@
 \DeclareRobustCommand\kanjiseries[1]{\@forced@seriesfalse\merge@kanji@series{#1}}
 \DeclareRobustCommand\fontseries[1]{\kanjiseries{#1}\romanseries{#1}}
 \else        % --- for <= 2020-10-01 END & for >= 2021-05-01 BEGIN
+\ifx\@undefined\@forced@series@kanjitrue\newif\if@forced@series@kanji\fi
 \DeclareRobustCommand\romanseries[1]{\@forced@seriesfalse
     \expandafter\def\expandafter\delayed@f@adjustment\expandafter
         {\delayed@f@adjustment\delayed@merge@font@series{#1}}}
-\DeclareRobustCommand\kanjiseries[1]{\@forced@seriesfalse
+\DeclareRobustCommand\kanjiseries[1]{\@forced@series@kanjifalse
     \expandafter\def\expandafter\delayed@k@adjustment\expandafter
         {\delayed@k@adjustment\delayed@merge@kanji@series{#1}}}
 \DeclareRobustCommand\fontseries[1]{\kanjiseries{#1}\romanseries{#1}}
@@ -973,7 +974,7 @@
 \DeclareRobustCommand\romanseriesforce[1]{\@forced@seriestrue
     \expandafter\def\expandafter\delayed@f@adjustment\expandafter
       {\delayed@f@adjustment\edef\f@series{#1}}}
-\DeclareRobustCommand\kanjiseriesforce[1]{\@forced@seriestrue
+\DeclareRobustCommand\kanjiseriesforce[1]{\@forced@series@kanjitrue
     \expandafter\def\expandafter\delayed@k@adjustment\expandafter
       {\delayed@k@adjustment\edef\k@series{#1}}}
 \DeclareRobustCommand\fontseriesforce[1]{\kanjiseriesforce{#1}\romanseriesforce{#1}}
@@ -1063,9 +1064,10 @@
     \expandafter\def\expandafter\delayed@k@adjustment\expandafter
         {\delayed@k@adjustment\delayed@merge@kanji@shape{#1}}}
 \DeclareRobustCommand\fontshape[1]{%
-  \@shape@roman@kanjitrue
-  \kanjishape{#1}\romanshape{#1}%
-  \@shape@roman@kanjifalse}
+  \romanshape{#1}%
+    \expandafter\def\expandafter\delayed@k@adjustment\expandafter
+        {\delayed@k@adjustment\@shape@roman@kanjitrue
+         \delayed@merge@kanji@shape{#1}\@shape@roman@kanjifalse}}
 \fi          % --- for >= 2021-05-01 END
 \fi
 \ifx\fontshapeforce\@undefined   % old
@@ -1344,6 +1346,7 @@
    \fi
 ~\fi
 }
+\ifx\delayed@f@adjustment\@undefined % --- for <= 2020-10-01 BEGIN
 \def\prepare@family@series@update@kanji#1#2{%
 ~\if@forced@series
 ~  \kanjifamily#2%
@@ -1368,6 +1371,32 @@
    \fi
 ~\fi
 }
+\else        % --- for <= 2020-10-01 END & for >= 2021-05-01 BEGIN
+\def\prepare@family@series@update@kanji#1#2{%
+~\if@forced@series@kanji
+~  \kanjifamily#2%
+~\else
+   \expand@font@defaults
+   \let\target@series@value\@empty
+   \def\target@meta@family@value{#1}%
+   \expandafter\edef\csname ??def@ult\endcsname{\k@family}%
+   \let\@elt\update@series@target@value@kanji
+      \@meta@family@list@kanji
+      \@elt{??}%
+   \let\@elt\relax
+   \kanjifamily#2%
+   \ifx\target@series@value\@empty
+   \else
+     \ifx \k@series\target@series@value
+     \else
+       \begingroup\let\f@encoding\k@encoding\let\f@family\k@family
+         \maybe@load@fontshape\endgroup
+       \series@maybe@drop@one@m\target@series@value\k@series
+     \fi
+   \fi
+~\fi
+}
+\fi          % --- for >= 2021-05-01 END
 \def\@meta@family@list@kanji{\@elt{mc}\@elt{gt}}
 \def\update@series@target@value@kanji#1{%
   \def\reserved@a{#1}%
